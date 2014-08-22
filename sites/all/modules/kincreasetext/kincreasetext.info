@@ -1,0 +1,3 @@
+name = Kit 13 - Increase Hit Text Size
+description = A module to increase the length of a text field (field_hit) to 1024
+core = 7.x

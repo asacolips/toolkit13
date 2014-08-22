@@ -1,0 +1,15 @@
+name = Feed Import
+description = Imports content from various file types (like XML, HTML, CSV, JSON, ...) or from databases
+package = Feeds
+core = 7.x
+
+dependencies[] = feed_import_base
+
+configure = admin/config/services/feed_import
+
+; Information added by Drupal.org packaging script on 2014-06-21
+version = "7.x-3.3"
+core = "7.x"
+project = "feed_import"
+datestamp = "1403361228"
+

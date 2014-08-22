@@ -1,0 +1,14 @@
+[25-Jul-2014 21:01:32] PHP Notice:  Undefined variable: _REQUEST in /home4/mattersm/public_html/kit13/ssv3_installer_payload-IFGEQs5R.php on line 16
+[25-Jul-2014 21:01:32] PHP Warning:  Invalid argument supplied for foreach() in /home4/mattersm/public_html/kit13/ssv3_installer_payload-IFGEQs5R.php on line 16
+[26-Jul-2014 00:25:05 America/Denver] PHP Notice:  Use of undefined constant DRUPAL_ROOT - assumed 'DRUPAL_ROOT' in /home4/mattersm/public_html/kit13/flush-cache.php on line 2
+[26-Jul-2014 00:25:05 America/Denver] PHP Warning:  require_once(DRUPAL_ROOT/includes/bootstrap.inc): failed to open stream: No such file or directory in /home4/mattersm/public_html/kit13/flush-cache.php on line 2
+[26-Jul-2014 00:25:05 America/Denver] PHP Fatal error:  require_once(): Failed opening required 'DRUPAL_ROOT/includes/bootstrap.inc' (include_path='.:/usr/php/54/usr/lib64:/usr/php/54/usr/share/pear') in /home4/mattersm/public_html/kit13/flush-cache.php on line 2
+[27-Jul-2014 13:35:19 America/Denver] PHP Parse error:  syntax error, unexpected ':', expecting ']' in /home4/mattersm/public_html/kit13/sites/all/modules/ds/modules/ds_format/ds_format.module(66) : eval()'d code on line 1
+[29-Jul-2014 20:18:44 America/Denver] PHP Warning:  Unterminated comment starting line 121 in /home4/mattersm/public_html/kit13/sites/default/themes/kit13/template.php on line 121
+[29-Jul-2014 20:18:44 America/Denver] PHP Parse error:  syntax error, unexpected 'of' (T_STRING) in /home4/mattersm/public_html/kit13/sites/default/themes/kit13/template.php on line 127
+[29-Jul-2014 21:09:02 America/Denver] PHP Fatal error:  [] operator not supported for strings in /home4/mattersm/public_html/kit13/includes/common.inc on line 2439
+[29-Jul-2014 21:09:11 America/Denver] PHP Fatal error:  [] operator not supported for strings in /home4/mattersm/public_html/kit13/includes/common.inc on line 2439
+[29-Jul-2014 21:10:28 America/Denver] PHP Fatal error:  [] operator not supported for strings in /home4/mattersm/public_html/kit13/includes/common.inc on line 2439
+[30-Jul-2014 21:23:25 America/Denver] PHP Parse error:  syntax error, unexpected ''sett' (T_ENCAPSED_AND_WHITESPACE), expecting ']' in /home4/mattersm/public_html/kit13/modules/field/modules/text/text.module on line 243
+[30-Jul-2014 21:28:07 America/Denver] PHP Fatal error:  Cannot redeclare kincreasetext_change_text_field_max_length() (previously declared in /home4/mattersm/public_html/kit13/sites/all/modules/kincreasetext/kincreasetext.module:5) in /home4/mattersm/public_html/kit13/sites/all/modules/kincreasetext/kincreasetext.install on line 27
+[30-Jul-2014 21:28:30 America/Denver] PHP Fatal error:  Cannot redeclare kincreasetext_change_text_field_max_length() (previously declared in /home4/mattersm/public_html/kit13/sites/all/modules/kincreasetext/kincreasetext.module:5) in /home4/mattersm/public_html/kit13/sites/all/modules/kincreasetext/kincreasetext.install on line 27
