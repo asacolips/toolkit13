@@ -14,7 +14,7 @@
   /* Underline all links. */
   a:link,
   a:visited {
-    text-decoration: underline !important;
+    //text-decoration: underline !important;
   }
 
   /* Don't underline header. */
@@ -76,5 +76,62 @@
   .feed-icons {
     visibility: hidden;
     display: none;
+  }
+
+  header, nav.breadcrumb, .tabs-primary, footer, div.field-type-taxonomy-term-reference, #back-to-top {
+    display: none !important;
+  }
+
+  html {
+    background: white !important;
+  }
+
+  #page,
+  .region-bottom,
+  .group-header > .field,
+  .group-left > .field,
+  .group-right > .field,
+  .group-middle > .field {
+    padding: 1mm 0mm !important;
+  }
+
+  .field-name-title h1 {
+    margin: 0 0 2mm 0;
+  }
+
+  .node-power, .node-magic-item {
+    page-break-inside: avoid;
+    position: relative !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: auto !important;
+    float: none !important;
+    clear: both !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    background: #ededed !important;
+    box-shadow: none !important;
+    border-bottom: 1mm solid #ccc;
+  }
+
+  .field-name-field-powers > .field-items,
+  .field-name-field-character-magic-items > .field-items {
+    position: relative !important;
+    height: auto !important;
+  }
+
+  .field-name-field-powers,
+  .field-name-field-character-magic-items {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+
+  div.field-name-field-race,
+  div.field-name-field-class {
+    display: block !important;
+
+    a[href]:after {
+      display: none;
+    }
   }
 }

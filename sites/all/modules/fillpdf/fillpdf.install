@@ -1,0 +1,168 @@
+<?php
+
+/**
+ * @file
+ * Install
+ */
+
+/**
+ * Implements hook_schema().
+ */
+function fillpdf_schema() {
+  $schema = array();
+
+  $schema['fillpdf_forms'] = array(
+    'fields' => array(
+      'fid' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'title' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+      ),
+      'default_nid' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => FALSE,
+      ),
+      'url' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+      ),
+      'destination_path' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => FALSE
+      ),
+      'replacements' => array(
+        'type' => 'text',
+        'size' => 'normal',
+        'not null' => FALSE
+      ),
+      'destination_redirect' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => FALSE,
+      ),
+    ),
+    'primary key' => array('fid'),
+  );
+
+  $schema['fillpdf_fields'] = array(
+    'fields' => array(
+      'fid' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'pdf_key' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+      ),
+      'label' => array(
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => TRUE,
+      ),
+      'value' => array(
+        'type' => 'text',
+        'size' => 'medium',
+        'not null' => TRUE,
+      ),
+      'replacements' => array(
+        'type' => 'text',
+        'size' => 'normal',
+        'not null' => FALSE
+      ),
+    ),
+    'primary key' => array('fid', 'pdf_key'),
+  );
+
+  return $schema;
+}
+
+/**
+ * Implements hook_install().
+ */
+function fillpdf_install() {
+
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function fillpdf_uninstall() {
+
+}
+
+/**
+ * Implements hook_update_N().
+ */
+
+/**
+ * Add field to store destination path for saving PDFs as files.
+ */
+function fillpdf_update_7001() {
+  if (!db_field_exists('fillpdf_forms', 'destination_path')) {
+    db_add_field('fillpdf_forms', 'destination_path', array('type' => 'varchar', 'length' => 255, 'not null' => FALSE));
+  }
+}
+
+/**
+ * Add fields to store token replacements.
+ */
+function fillpdf_update_7002() {
+  if (!db_field_exists('fillpdf_forms', 'replacements')) {
+    db_add_field('fillpdf_forms', 'replacements', array('type' => 'text', 'size' => 'normal', 'not null' => FALSE));
+  }
+  if (!db_field_exists('fillpdf_fields', 'replacements')) {
+    db_add_field('fillpdf_fields', 'replacements', array('type' => 'text', 'size' => 'normal', 'not null' => FALSE));
+  }
+}
+
+/**
+ * Convert legacy configuration variables to new fillpdf_service variable and delete.
+ */
+function fillpdf_update_7003() {
+  $default = FALSE;
+  global $conf;
+  foreach (array('fillpdf_remote_service', 'fillpdf_local_service', 'fillpdf_local_php') as $variable_name) {
+    if (isset($conf[$variable_name])) {
+      if ($conf[$variable_name]) {
+        $default = $variable_name;
+      }
+      variable_del($variable_name);
+    }
+  }
+  if ($default) {
+    $variable_name_map = array(
+      'fillpdf_local_php' => 'pdftk',
+      'fillpdf_local_service' => 'local',
+      'fillpdf_remote_service' => 'remote',
+    );
+    variable_set('fillpdf_service', $variable_name_map[$default]);
+  }
+}
+
+/**
+ * Add field to store default NID.
+ */
+function fillpdf_update_7004() {
+  if (!db_field_exists('fillpdf_forms', 'default_nid')) {
+    db_add_field('fillpdf_forms', 'default_nid', array('type' => 'int', 'unsigned' => TRUE, 'not null' => FALSE));
+  }
+}
+
+/**
+ * Add database field to hold "Redirect to saved file" setting.
+ */
+function fillpdf_update_7005() {
+  if (!db_field_exists('fillpdf_forms', 'destination_redirect')) {
+    db_add_field('fillpdf_forms', 'destination_redirect', array('type' => 'int', 'size' => 'tiny', 'unsigned' => TRUE, 'not null' => FALSE));
+  }
+}

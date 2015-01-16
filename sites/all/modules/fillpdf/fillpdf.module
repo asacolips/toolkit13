@@ -1,0 +1,1026 @@
+<?php
+
+/**
+ * @file
+ * Allows mappings of PDFs to site content
+ */
+
+define("DEFAULT_SERVLET_URL", variable_get('fillpdf_remote_protocol', 'http') . "://" . variable_get('fillpdf_remote_endpoint', "fillpdf-service.com/xmlrpc.php"));
+module_load_include('inc', 'fillpdf', 'fillpdf.admin');
+
+/**
+ * Implements hook_help().
+ */
+function fillpdf_help($path, $arg) {
+  switch ($path) {
+    case 'admin/help#fillpdf':
+      $content = t('See the <a href="!documentation">documentation on drupal.org</a> for a full description of and guide to this module.', array('!documentation' => url('http://drupal.org/documentation/modules/fillpdf')));
+      return $content;
+    case 'admin/structure/fillpdf':
+      if (module_exists('help')) {
+        return t('See the !link for an explanation on dowloading these forms to PDF',
+          array('!link' => l(t('documentation'), 'http://drupal.org/documentation/modules/fillpdf')));
+      }
+      else {
+        return t('Activate the help module if you need an ' .
+          'explanation on downloading these forms to PDF.');
+      }
+  }
+}
+
+
+/**
+ * Implements hook_menu().
+ */
+function fillpdf_menu() {
+  $access = array('administer pdfs');
+  $items = array();
+
+  // fillpdf?fid=10&nids[]=1&webforms[0][nid]=2&webforms[0][sid]=3
+  $items['fillpdf'] = array(
+    'page callback' => 'fillpdf_parse_uri',
+    // Can't use access callback.  We need the arguments, but they're passed as $GET.  Will access-check in fillpdf_merge_pdf
+    'access arguments' => array('access content'),
+    'type' => MENU_CALLBACK,
+  );
+
+  // ------- Config ---------------------------
+  $items['admin/config/media/fillpdf'] = array(
+    'title' => 'Fill PDF settings',
+    'description' => 'Configure tool to use with Fill PDF',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('fillpdf_settings'),
+    'access arguments' => $access,
+    'type' => MENU_NORMAL_ITEM,
+  );
+
+  // --------- Form ------------------------
+  $items['admin/structure/fillpdf'] = array(
+    'title' => 'Fill PDF',
+    'description' => 'Manage your PDFs',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('fillpdf_forms_admin'),
+    'access arguments' => $access,
+  );
+  $items['admin/structure/fillpdf/%'] = array(
+    'title' => 'Edit PDF form',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('fillpdf_form_edit', 3),
+    'access arguments' => $access,
+  );
+  $items['admin/structure/fillpdf/%/delete'] = array(
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('fillpdf_form_delete_confirm', 3),
+    'access arguments' => $access,
+    'type' => MENU_CALLBACK,
+  );
+  $items['admin/structure/fillpdf/%/export'] = array(
+    'title' => 'Export Fill PDF field mappings',
+    'page callback' => 'fillpdf_form_export',
+    'page arguments' => array(3),
+    'access arguments' => $access,
+  );
+  $items['admin/structure/fillpdf/%/import'] = array(
+    'title' => 'Import Fill PDF field mappings',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('fillpdf_form_import_form', 3),
+    'access arguments' => $access,
+  );
+
+  // --------- Fields ------------------------
+  $items['admin/structure/fillpdf/%/add'] = array(
+    'title' => 'Add field',
+    'page callback' => 'fillpdf_field',
+    'page arguments' => array(4, 3),
+    'access arguments' => $access,
+    'type' => MENU_LOCAL_TASK,
+  );
+  $items['admin/structure/fillpdf/%/edit/%'] = array(
+    'page callback' => 'fillpdf_field',
+    'page arguments' => array(4, 3, 5),
+    'access arguments' => $access,
+  );
+  return $items;
+}
+
+/**
+ * Implements hook_permission().
+ */
+function fillpdf_permission() {
+  return array(
+    'administer pdfs' => array(
+      'title' => t('Administer PDFs'),
+      'description' => t('Allows usage of the Fill PDF administration screen.'),
+    ),
+    'publish own pdfs' => array(
+      'title' => t('Publish Own PDFs'),
+      'description' => t("Allows filling in and downloading PDFs with one's own site content."),
+    ),
+    'publish all pdfs' => array(
+      'title' => t('Publish All PDFs'),
+      'description' => t('Allows filling in and downloading PDFs with any site content.'),
+    ),
+  );
+}
+
+
+/**
+ * Gets a link to the prinable PDF, merged with the passed-in data
+ * @param array/int $nids or $nid, if you pass in one value it will merge with that node.
+ *  If array, it will merge with multiple nodes, with later nids overriding previous ones.
+ * @param array $webforms Array of webforms, of this strucure: array('nid'=>1, 'sid'=>1)
+ * @param bool $sample TRUE if you want to populate the form with its own field-names (to get a gist of PDF)
+ */
+function fillpdf_pdf_link($fid, $nids = NULL, $webform_arr = NULL, $sample = FALSE) {
+  $nids_uri = $webforms_uri = "";
+
+  if (is_array($nids)) {
+    $nids_uri = '&nids[]=' . implode('&nids[]=', $nids);
+  }
+  elseif (isset($nids)) {
+    $nids_uri = "&nids[]={$nids}";
+  }
+
+  if (is_array($webform_arr)) {
+    if ($webform_arr['nid']) {
+      $webform_arr = array($webform_arr);
+    }
+    foreach ($webform_arr as $key => $webform) {
+      $webforms_uri .= "&webforms[{$key}][nid]={$webform['nid']}";
+    }
+    $webforms_uri .= $webform['sid'] ? "&webforms[{$key}][sid]={$webform['sid']}" : "";
+  }
+  $sample = $sample ? '&sample=true' : '';
+
+  return url('', array('absolute' => TRUE)) . "fillpdf?fid={$fid}{$nids_uri}{$webforms_uri}{$sample}";
+}
+
+
+
+/**
+ * Get the data and form that need to be merged, from the $_GET, and print the PDF
+ *
+ * @see fillpdf_pdf_link()
+ * for $_GET params
+ */
+function fillpdf_parse_uri() {
+  // Avoid undefined index warnings, but don't clobber existing values
+  $_GET += array(
+    'nid' => NULL,
+    'nids' => NULL,
+    'webform' => NULL,
+    'webforms' => NULL,
+    'fid' => NULL,
+    'sample' => NULL,
+    'download' => NULL,
+    'flatten' => NULL,
+  );
+  $force_download = FALSE;
+  $flatten = TRUE;
+
+  //this function called multiple times, cut down on DB calls
+  //    static $get;if($get)return $get;
+  $sample = $_GET['sample']; // is this just the PDF populated with sample data?
+  $fid = $_GET['fid'];
+  $nids = $webforms = array();
+
+  if ( $_GET['nid'] || $_GET['nids'] ) {
+    $nids = ( $_GET['nid'] ? array($_GET['nid']) : $_GET['nids'] );
+  }
+  if ( $_GET['webform'] || $_GET['webforms'] ) {
+    $webforms = ( $_GET['webform'] ? array($_GET['webform']) : $_GET['webforms'] );
+  }
+
+  if (isset($_GET['download']) && (int) $_GET['download'] == 1) {
+    $force_download = TRUE;
+  }
+  if (isset($_GET['flatten']) && (int) $_GET['flatten'] == 0) {
+    $flatten = FALSE;
+  }
+  fillpdf_merge_pdf($fid, $nids, $webforms, $sample, $force_download, FALSE, $flatten);
+}
+
+/**
+ * Constructs a page from scratch (pdf content-type) and sends it to the
+ * browser or saves it, depending on if a custom path is configured or not.
+ *
+ * @param $fid
+ *   The integer ID of the PDF.
+ * @param $nids
+ *   Array of integer IDs of the CCK nodes from which to draw data.
+ * @param $webform_arr
+ *   Array of integer IDs of the Webform nodes from which to draw data.
+ * @param $sample
+ *   If "true" (exact string), each field will be filled with its field name.
+ * @param $force_download
+ *   Boolean. If TRUE, always send a PDF to the browser, even if a
+ *   destination_path is set for the PDF.
+ * @param $skip_access_check
+ *   Boolean. If TRUE, do not do any access checks. Allow the user to download
+ *   any PDF with data from any node. Only use when access checks are being
+ *   done some other way.
+ * @param $flatten
+ *   Boolean. If TRUE, flatten the PDF so that fields cannot be edited.
+ *   Otherwise leave fields editable.
+ * @param $handle
+ *   Boolean. If TRUE, handle the PDF, which usually consists of sending it to
+ *   the users's browser or saving it as a file.
+ *
+ * @return
+ *   When $handle is FALSE, this function returns the variable it would have
+ *   used to invoke hook_fillpdf_merge_pre_handle().
+ *
+ *   When $handle is TRUE, it returns nothing.
+ *
+ * @see fillpdf_pdf_link()
+ * for $_GET params
+ */
+function fillpdf_merge_pdf($fid, $nids = NULL, $webform_arr = NULL, $sample = NULL, $force_download = FALSE, $skip_access_check = FALSE, $flatten = TRUE, $handle = TRUE) {
+  // Case 1: No $fid
+  if (is_null($fid)) {
+    drupal_set_message(t('Fill PDF Form ID required to print a PDF.'), 'warning');
+    drupal_goto();
+  }
+
+  $fillpdf_info = fillpdf_load($fid);
+
+  // Case 1.5: $fid is not valid.
+  if ($fillpdf_info === FALSE) {
+    drupal_set_message(t('Non-existent Fill PDF Form ID.'), 'error');
+    drupal_not_found();
+    drupal_exit();
+  }
+
+  global $user;
+
+  $nodes = $webforms = array();
+
+  // If $webform_arr contains entries with an sid, but not an nid, set the nid to the default.
+  if (!empty($fillpdf_info->default_nid) && is_array($webform_arr)) {
+    foreach (array_keys($webform_arr) as $key) {
+      if (empty($webform_arr[$key]['nid'])) {
+        $webform_arr[$key]['nid'] = $fillpdf_info->default_nid;
+      }
+    }
+  }
+
+  // If no nid is given, use the default.
+  if (!empty($fillpdf_info->default_nid) && empty($nids) && empty($webform_arr)) {
+    $default_node = node_load($fillpdf_info->default_nid);
+    if ($default_node) {
+      if (empty($default_node->webform)) { // Default node is a non-webform node.
+        $nodes[] = $default_node;
+      }
+      else { // Default node is a webform.
+        $webform_arr = array(array('nid' => $fillpdf_info->default_nid, 'node' => $default_node));
+      }
+    }
+  }
+
+  // Nodes
+  if (is_array($nids)) {
+    foreach ($nids as $nid) {
+      $nodes[] = node_load($nid);
+    }
+  }
+  // Webforms
+  if (module_exists('webform') && is_array($webform_arr)) {
+
+    // Load the proper submission helper file and account for the different
+    // versions of Webform.
+    $included = module_load_include('inc', 'webform', 'includes/webform.submissions');
+    if ($included === FALSE) {
+      module_load_include('inc', 'webform', 'webform_submissions');
+    }
+
+    foreach ($webform_arr as $webform) {
+      if (!empty($webform['nid'])) {
+        if (empty($webform['sid'])) { // User did not specify submission ID, meaning they want most recent.
+          $webform['sid'] = db_query('SELECT sid FROM {webform_submissions}
+            WHERE nid = :nid AND uid = :uid ORDER BY submitted DESC', array(':nid' => $webform['nid'], ':uid' => $user->uid))->fetchField();
+        }
+        if ($webform['sid'] !== FALSE) {
+          $webforms[] = array(
+            'webform' => empty($webform['node']) ? node_load($webform['nid']) : $webform['node'],
+            'submission' => webform_get_submission($webform['nid'], $webform['sid']),
+          );
+        }
+      }
+    }
+  }
+
+  if ($skip_access_check !== TRUE) {
+    if (!fillpdf_merge_pdf_access($nodes, $webforms)) {
+      drupal_access_denied();
+      drupal_exit();
+    }
+  }
+
+  $fields = $token_objects = $image_data = array();
+  $query = db_query("SELECT * FROM {fillpdf_fields} WHERE fid = :fid", array(':fid' => $fid));
+  foreach ($query as $obj) {
+    $obj->replacements = _fillpdf_replacements_to_array($obj->replacements);
+    // Keep track of whether we're dealing with an image or not
+    $transform_string = FALSE;
+
+    // Fill a sample PDF & return
+    if ($sample == 'true') {
+      $fields[$obj->pdf_key] = $obj->pdf_key;
+      // If sampling, return to the form edit page
+      $_GET['destination'] = "admin/structure/fillpdf/$fid";
+    }
+    else {
+      // multiple nids, #516840
+      // we want the last nid in $_GET to override previous ones (aka, of fillpdf?nids[]=1&nids[]=2, 2 wins)
+      $nodes = array_reverse($nodes);
+      $webforms = array_reverse($webforms);
+
+      // --- node token replacements
+      if (!empty($nodes)) {
+        foreach ($nodes as $node) {
+          $token_objects['node'] = $node;
+          // The third parameter says to clear the value if no token can be generated
+          $token = token_replace($obj->value, array('node' => $node), array('clear' => TRUE));
+          if ($token && $token != $obj->value) {
+            break;
+          }
+        }
+        $transform_string = TRUE;
+        // If they're populating with an Image field
+        if (strstr($obj->value, '[stamp:')) {
+          // HACK: Use a pseudo-token to stamp images.
+
+          // Find the two sides of the square bracket contents.
+          // 7 is the length of [stamp:. We don't want the brackets themselves.
+          $left_side = strpos($obj->value, '[stamp:') + 7;
+          $right_side = strpos($obj->value, ']');
+          $field_name = substr($obj->value, $left_side, $right_side - $left_side);
+          if (isset($node->{$field_name}[$node->language])) {
+            $image_path = $node->{$field_name}[$node->language][0]['uri'];
+            $transform_string = FALSE;
+            $fields[$obj->pdf_key] = '{image}' . drupal_realpath($image_path);
+            $image_path_info = pathinfo(drupal_realpath($image_path));
+            // Store the image data to transmit to the remote service if necessary
+            $file_data = file_get_contents(drupal_realpath($image_path));
+            if ($file_data) {
+              $image_data[$obj->pdf_key] = array(
+                'data' => base64_encode($file_data),
+                'filenamehash' => md5($image_path_info['filename']) . '.' . $image_path_info['extension'],
+              );
+            }
+          }
+        }
+      }
+      // /--- node token replacements ---
+
+      // --- webform token replacements
+      if (!empty($webforms)) {
+        foreach ($webforms as $webform) {
+          $token_objects['webform'] = $webform['submission'];
+          $token = token_replace($obj->value, array('webform' => $webform['submission']), array('clear' => TRUE));
+          if ($token) {
+            break;
+          }
+        }
+        $transform_string = TRUE;
+      }
+      // /--- webform token replacements ---
+      if ($transform_string) {
+        // Replace <br /> occurrences with newlines
+        $str = preg_replace('|<br />|', '
+', $token);
+        $str = _fillpdf_transform_field_value($str, $fillpdf_info->replacements, $obj->replacements);
+        $fields[$obj->pdf_key] = $str;
+      }
+    }
+  }
+
+  // Provide hook_fillpdf_merge_fields_alter() to let other modules
+  // alter fields before pdf generation.
+  $context = array(
+    'nodes' => $nodes,
+    'webforms' => $webforms,
+  );
+  drupal_alter('fillpdf_merge_fields_alter', $fields, $context);
+
+  $pdf_data = _fillpdf_get_file_contents($fillpdf_info->url, "<front>");
+  switch (variable_get('fillpdf_service')) {
+    case 'remote': // use fillpdf-service.com's xmlrpc service (must be registered)
+      $api_key = variable_get('fillpdf_api_key', '0');
+      $result = _fillpdf_xmlrpc_request(DEFAULT_SERVLET_URL, 'merge_pdf_v3', base64_encode($pdf_data), $fields, $api_key, $flatten, $image_data);
+      if ($result->error == TRUE) {
+        drupal_goto();
+      } // after setting error message
+      $data = base64_decode($result->data);
+      break;
+
+    case 'local': // use local php/java bridge (must have Tomcat & JavaBridge installed on VPS or dedicated
+      $require = drupal_get_path('module', 'fillpdf') . '/lib/JavaBridge/java/Java.inc';
+      require_once DRUPAL_ROOT . '/' . $require;
+      try {
+        $fillpdf = new java('com.ocdevel.FillpdfService', base64_encode($pdf_data), 'bytes');
+        foreach ($fields as $key => $field) {
+          if (substr($field, 0, 7) == '{image}') {
+            // Remove {image} marker.
+            $image_filepath = substr($field, 7);
+            $fillpdf->image($key, $image_filepath, "file");
+          }
+          else {
+            $fillpdf->text($key, $field);
+          }
+        }
+      }
+      catch (JavaException $e) {
+        drupal_set_message(check_plain(java_truncate((string) $e)), 'error');
+        drupal_goto(); // after setting error message
+      }
+      try {
+        if ($flatten) {
+          $data = java_values(base64_decode($fillpdf->toByteArray()));
+        }
+        else {
+          $data = java_values(base64_decode($fillpdf->toByteArrayUnflattened()));
+        }
+      }
+      catch (JavaException $e) {
+        drupal_set_message(java_truncate((string)$e), 'error');
+        drupal_goto(); //after setting error message
+      }
+      break;
+
+    case 'pdftk': // Use PDFTK to merge the two
+      $data = fillpdf_execute_merge('pdftk', $fields, $fillpdf_info, 'url', $flatten);
+      break;
+
+    default:
+      drupal_set_message(t('Fill PDF is not configured.'), 'error');
+      drupal_goto();
+  }
+
+  if ($webform_arr && isset($webform['webform'])) {
+    $node = $webform['webform'];
+  }
+
+  if (!empty($node)) {
+    // Log this, could be useful
+    watchdog('fillpdf', 'User generated form "%form" for node "%node".', array(
+      '%form' => $fillpdf_info->title,
+      '%node' => $node->title,
+    ));
+  }
+
+  // Assemble some metadata that will be useful for the handling phase.
+  // @todo: Convert function parameters to use $options
+  // and add those into $fillpdf_info.
+
+  // @todo: Abstract this setup code
+  $fillpdf_object = new stdClass();
+  $fillpdf_object->info = $fillpdf_info;
+  $fillpdf_object->data = $data;
+  $fillpdf_object->context = array(
+    'nodes' => $nodes,
+    'webforms' => $webforms,
+  );
+  $fillpdf_object->token_objects = $token_objects;
+  $fillpdf_object->options = array(
+    'download' => $force_download,
+    'flatten' => $flatten,
+  );
+
+  if ($handle === TRUE) {
+    // Allow modules to step in here and change the way the PDF is handled
+    module_invoke_all('fillpdf_merge_pre_handle', $fillpdf_object);
+
+    // Perform the default action on the PDF - in other words, the one it was
+    // configured to do in the administrative area.
+    fillpdf_merge_handle_pdf($fillpdf_object->info, $fillpdf_object->data, $fillpdf_object->token_objects, 'default', $force_download);
+  }
+
+  // If not handling, then send back all the metadata to the caller.
+  else {
+    return $fillpdf_object;
+  }
+}
+
+/**
+ * Figure out what to do with the PDF and do it.
+ *
+ * @return Nothing.
+ * @param $pdf_info An object containing the loaded record from {fillpdf_forms}.
+ * @param $pdf_data A string containing the content of the merged PDF.
+ * @param $token_objects An array of objects to be used in replacing tokens.
+ * Here, specifically, it's for generating the filename of the handled PDF.
+ * @param $action One of the following keywords: default, download, save,
+ * redirect. These correspond to performing the configured action (from
+ * admin/structure/fillpdf/%), sending the PDF to the user's browser, saving it
+ * to a file, and saving it to a file and then redirecting the user's browser to
+ * the saved file.
+ * @param $force_download If set, this function will always end the request by
+ * sending the filled PDF to the user's browser.
+ */
+function fillpdf_merge_handle_pdf($pdf_info, $pdf_data, $token_objects, $action = 'download', $force_download = FALSE) {
+  if (in_array($action, array('default', 'download', 'save', 'redirect')) === FALSE) {
+    // Do nothing if the function is called with an invalid action.
+    return;
+  }
+  // Generate the filename of downloaded PDF from title of the PDF set in
+  // admin/structure/fillpdf/%fid
+  $output_name = _fillpdf_process_filename($pdf_info->title, $token_objects);
+
+  if ($action == 'default') {
+    // Determine the default action, then re-set $action to that.
+    if (empty($pdf_info->destination_path) === FALSE) {
+      $action = 'save';
+    }
+    else {
+      $action = 'download';
+    }
+  }
+
+  // Initialize variable containing whether or not we send the user's browser to
+  // the saved PDF after saving it (if we are)
+  $redirect_to_file = FALSE;
+
+  // Get a load of this switch...they all just fall through!
+  switch ($action) {
+    case 'redirect':
+      $redirect_to_file = $pdf_info->destination_redirect;
+    case 'save':
+      fillpdf_save_to_file($pdf_info, $pdf_data, $token_objects, $output_name, !$force_download, $redirect_to_file);
+    // Fill PDF classic!
+    case 'download':
+      drupal_add_http_header("Pragma", "public");
+      drupal_add_http_header('Expires', 0);
+      drupal_add_http_header('Cache-Control', 'must-revalidate, post-check=0, pre-check=0');
+      drupal_add_http_header('Content-type', 'application-download');
+      // This must be strlen(), not drupal_strlen() because the length in bytes,
+      // not in characters, is what is needed here.
+      drupal_add_http_header('Content-Length', strlen($pdf_data));
+      drupal_add_http_header('Content-disposition', 'attachment; filename="' . $output_name . '"');
+      drupal_add_http_header('Content-Transfer-Encoding', 'binary');
+      echo $pdf_data;
+      drupal_exit();
+      break;
+  }
+}
+
+function fillpdf_save_to_file($pdf_info, $pdf_data, $token_objects, $output_name, $redirect = TRUE, $redirect_to_file = FALSE, $destination_path_override = NULL) {
+  if (isset($destination_path_override) && empty($destination_path_override) !== FALSE) {
+    $destination_path = $destination_path_override;
+  }
+  if (empty($pdf_info->destination_path) && empty($destination_path_override)) {
+    // If this function is called and the PDF isn't set up with a destination
+    // path, give it one.
+    $destination_path = 'fillpdf';
+  }
+  else {
+    $destination_path = $pdf_info->destination_path;
+  }
+  $destination_path = _fillpdf_process_destination_path($pdf_info->destination_path, $token_objects);
+  $path_exists = file_prepare_directory($destination_path, FILE_CREATE_DIRECTORY + FILE_MODIFY_PERMISSIONS);
+  if ($path_exists === FALSE) {
+    watchdog('fillpdf', "The path %destination_path does not exist and could not be
+      automatically created. Therefore, the previous submission was not saved. If
+      the URL contained download=1, then the PDF was still sent to the user's browser.
+      If you were redirecting them to the PDF, they were sent to the homepage instead.
+      If the destination path looks wrong and you have used tokens, check that you have
+      used the correct token and that it is available to Fill PDF at the time of PDF
+      generation.",
+      array('%destination_path' => $destination_path));
+  }
+  else {
+    // Full steam ahead!
+    $saved_file_path = file_unmanaged_save_data($pdf_data, $destination_path . "/$output_name", FILE_EXISTS_RENAME);
+    if ($redirect === TRUE) {
+      if (isset($_GET['destination']) === FALSE) {
+        // Should we send the user directly to the saved PDF? If so, do that.
+        if ($redirect_to_file) {
+          drupal_goto(file_create_url($saved_file_path));
+        }
+      }
+    }
+  }
+
+  if ($redirect === TRUE) {
+    // Allow the "destination" query string parameter to be used
+    // e.g. fillpdf?nid=1&fid=1&destination=node/1
+    // If no destination is provided, drupal_goto() will send the
+    // user to the front page.
+    drupal_goto();
+  }
+
+  return $saved_file_path;
+}
+
+// @todo: Put the hooks together
+// @todo: Document hooks
+/**
+ * Implementation of fillpdf_merge_pre_handle().
+ * Set up the data then invoke the Rules event.
+ */
+function fillpdf_fillpdf_merge_pre_handle($fillpdf) {
+  if (module_exists('rules')) {
+    rules_invoke_event('fillpdf_merge_pre_handle', $fillpdf);
+  }
+}
+
+/**
+ * Make sure the user has access to data they want to populate the PDF
+ */
+function fillpdf_merge_pdf_access($nodes = array(), $webforms = array()) {
+  if ( user_access('administer pdfs') || user_access('publish all pdfs') ) {
+    return TRUE;
+  }
+  if (!user_access('publish own pdfs')) {
+    return FALSE;
+  }
+
+  global $user;
+  if (empty($webforms)) {
+    foreach ($nodes as $node) {
+      // own node?
+      if ( !(node_access('view', $node)) || ($node->uid != $user->uid) ) {
+        return FALSE;
+      }
+    }
+  }
+  else {
+    foreach ($webforms as $webform) {
+      // In this case, we only care that they can view the Webform
+      if (!(node_access('view', node_load($webform['webform']->nid)))) {
+        return FALSE;
+      }
+    }
+  }
+
+  // Own webform submission?
+  if (!(empty($webforms))) {
+    foreach ($webforms as $webform) {
+      if ( !(webform_submission_access($webform['webform'], $webform['submission'], 'view')) ) {
+        return FALSE;
+      }
+    }
+  }
+
+  return TRUE;
+}
+
+function _fillpdf_process_filename($original, $token_objects) {
+  // Replace tokens *before* sanitization
+  if (!empty($token_objects)) {
+    $original = token_replace($original, $token_objects);
+  }
+
+  $output_name = str_replace(' ', '_', $original);
+  $output_name = preg_replace('/\.pdf$/i', '', $output_name);
+  $output_name = preg_replace('/[^a-zA-Z0-9_.-]+/', '', $output_name) . '.pdf';
+
+  return $output_name;
+}
+
+function fillpdf_build_filename($original, $token_objects) {
+  return _fillpdf_process_filename($original, $token_objects);
+}
+
+/**
+ * Utility function to allow other functions to merge PDFs with the various methods in a consistent way.
+ * @param string $method The service or program being used. Possible values: local, remote, pdftk. Currently, only pdftk is supported.
+ * @param array $fields The fields to merge into the PDF. Should be retrieved from the {fillpdf_fields} table.
+ * @param mixed $fillpdf When in URL mode, this is the record from {fillpdf_forms}. When in Stream mode, this is the PDF data.
+ * @param string $mode A special flag to control the behavior of this function. URL mode merges using a PDF on the
+ *   file system and Stream mode merges using the value of $fillpdf directly. Possible values: url, stream.
+ */
+function fillpdf_execute_merge($method, $fields, $fillpdf, $mode = 'url', $flatten = TRUE) {
+  $data = NULL;
+  // Try to prepare the data so that the $method part can process it without caring too much about merge tool
+  switch ($mode) {
+    case 'url':
+      $filename = $fillpdf->url;
+      break;
+    case 'stream':
+      $filename = file_unmanaged_save_data($fillpdf, file_directory_temp() . '/pdf_data.pdf', FILE_EXISTS_RENAME);
+      break;
+  }
+  switch ($method) {
+    case 'pdftk':
+      module_load_include('inc', 'fillpdf', 'xfdf'); // Looks like I'm the first actually to use this! (wizonesolutions)
+      $xfdfname = $filename . '.xfdf';
+      $xfdf = create_xfdf(basename($xfdfname), $fields);
+      // Generate the file
+      $xfdffile = file_save_data($xfdf, $xfdfname, FILE_EXISTS_RENAME);
+
+      // Now feed this to pdftk and save the result to a variable
+      $path_to_pdftk = fillpdf_pdftk_path();
+      ob_start();
+      passthru($path_to_pdftk . ' ' . escapeshellarg(drupal_realpath($filename)) . ' fill_form ' . escapeshellarg(drupal_realpath($xfdffile->uri)) . ' output - ' . ($flatten ? 'flatten ' : '') . 'drop_xfa');
+      $data = ob_get_clean();
+      if ($data === FALSE) {
+        drupal_set_message(t('pdftk not properly installed. No PDF generated.'), 'error');
+      }
+      file_delete($xfdffile);
+      if ($mode == 'stream') {
+        file_unmanaged_delete($filename);
+      }
+      break;
+  }
+  if ($data) {
+    return $data;
+  }
+  else {
+    return FALSE;
+  }
+}
+
+/**
+ * This function generates the form fields from the specified PDF.  It (1) sends a request to the iText
+ * servlet to parse the specified PDF, (2) iText returns an XML response with fields-mappings, this module
+ * parses the XML response & contsructs the fields.
+ */
+function fillpdf_parse_pdf($fid) {
+  $filename = db_query("SELECT url FROM {fillpdf_forms} WHERE fid = :fid", array(':fid' => $fid))->fetchField();
+  $content = _fillpdf_get_file_contents($filename, "<front>");
+  switch (variable_get('fillpdf_service')) {
+    case 'remote': // use fillpdf-service.com's xmlrpc service (must be registered)
+      $result = _fillpdf_xmlrpc_request(DEFAULT_SERVLET_URL, 'parse_pdf_fields', base64_encode($content));
+      if ($result->error == TRUE) {
+        drupal_goto('admin/structure/fillpdf');
+      } // after setting error message
+      $fields = $result->data;
+      break;
+
+    case 'local': // use local php/java bridge (must have Tomcat & JavaBridge installed on VPS or dedicated
+      $require = drupal_get_path('module', 'fillpdf') . '/lib/JavaBridge/java/Java.inc';
+      require_once DRUPAL_ROOT . '/' . $require;
+      try {
+        $fillpdf = new java('com.ocdevel.FillpdfService', base64_encode($content), 'bytes');
+        $fields = java_values($fillpdf->parse());
+      }
+      catch (JavaException $e) {
+        drupal_set_message(check_plain(java_truncate((string) $e)), 'error');
+        drupal_goto('admin/structure/fillpdf'); // after setting error message
+      }
+      break;
+
+    case 'pdftk': // use pdftk program (must be installed locally)
+      $fields = fillpdf_execute_parse('pdftk', $filename);
+      break;
+
+    default:
+      drupal_set_message(t('Fill PDF is not configured.'), 'error');
+      drupal_goto('admin/structure/fillpdf');
+  }
+
+  // Delete any existing fields (in case the PDF has been parsed before)
+  db_delete('fillpdf_fields')
+    ->condition('fid', $fid)
+    ->execute();
+
+  //create fields
+  foreach ((array) $fields as $key => $arr) {
+    if ($arr['type']) { // Don't store "container" fields
+      $arr['name'] = str_replace('&#0;', '', $arr['name']); // pdftk sometimes inserts random &#0; markers - strip these out. NOTE: This may break forms that actually DO contain this pattern, but 99%-of-the-time functionality is better than merge failing due to improper parsing.
+      $field = new stdClass();
+      $field->fid = $fid;
+      $field->pdf_key = $arr['name'];
+      $field->label = NULL;
+      $field->value = '';
+      drupal_write_record('fillpdf_fields', $field);
+    }
+  }
+}
+
+/**
+ * Utility function to allow other functions to parse PDFs with the various methods in a consistent way.
+ *
+ * @param string $method The service or program being used. Possible values: local, remote, pdftk. Currently, only pdftk is supported.
+ * @param mixed $fillpdf When in URL mode, this is the filename to the PDF to parse. When in Stream mode, this is the PDF data.
+ * @param string $mode A special flag to control the behavior of this function. URL mode merges using a PDF on the
+ *   file system and Stream mode merges using the value of $fillpdf directly. Possible values: url, stream.
+ */
+function fillpdf_execute_parse($method, $fillpdf, $mode = 'url') {
+  switch ($mode) {
+    case 'url':
+      $filename = $fillpdf;
+      break;
+    case 'stream':
+      $filename = file_unmanaged_save_data($fillpdf, file_directory_temp() . '/pdf_data.pdf', FILE_EXISTS_RENAME);
+      break;
+  }
+
+  $path_to_pdftk = fillpdf_pdftk_path();
+  $status = fillpdf_pdftk_check($path_to_pdftk);
+  if ($status === FALSE) {
+    drupal_set_message(t('pdftk not properly installed.'), 'error');
+    return array();
+  }
+
+  // Use exec() to call pdftk (because it will be easier to go line-by-line parsing the output) and pass $content via stdin. Retrieve the fields with dump_data_fields.
+  $output = array();
+  exec($path_to_pdftk . ' ' . escapeshellarg(drupal_realpath($filename)) . ' dump_data_fields', $output, $status);
+  if (count($output) === 0) {
+    drupal_set_message(t('PDF does not contain fillable fields.'), 'warning');
+    return array();
+  }
+
+  // Build a simple map of dump_data_fields keys to our own array keys
+  $data_fields_map = array(
+    'FieldType' => 'type',
+    'FieldName' => 'name',
+    'FieldFlags' => 'flags',
+    'FieldJustification' => 'justification',
+  );
+
+  // Build the fields array
+  $fields = array();
+  $fieldindex = -1;
+  foreach ($output as $line => $lineitem) {
+    if ($lineitem == '---') {
+      $fieldindex++;
+      continue;
+    }
+    // Separate the data key from the data value
+    $linedata = explode(':', $lineitem);
+    if (in_array($linedata[0], array_keys($data_fields_map))) {
+      $fields[$fieldindex][$data_fields_map[$linedata[0]]] = trim($linedata[1]);
+    }
+  }
+  if ($mode == 'stream') {
+    file_unmanaged_delete($filename);
+  }
+  return $fields;
+}
+
+function _fillpdf_get_file_contents($filepath, $error_goto = NULL) {
+  $filepath = drupal_realpath($filepath);
+  if ($error_goto && !file_exists($filepath)) {
+    drupal_set_message(t('@filepath does not exist. Check your
+      filesystem settings, as well as http://drupal.org/node/764936', array('@filepath' => $filepath)), 'error');
+    drupal_goto($error_goto);
+  }
+  $handle = fopen($filepath, "r");
+  $content = fread($handle, filesize($filepath));
+  fclose($handle);
+  return $content;
+}
+
+function _fillpdf_xmlrpc_request($url, $method) {
+  $args = func_get_args();
+  array_shift($args); // $url
+  // Fix up the array for Drupal 7 xmlrpc() function style
+  $args = array($args[0] => array_slice($args, 1));
+  $result = xmlrpc($url, $args);
+  $ret = new stdClass;
+  if (isset($result['error'])) {
+    drupal_set_message($result['error'], 'error');
+    $ret->error = TRUE;
+  }
+  elseif ($result == FALSE || xmlrpc_error()) {
+    $error = xmlrpc_error();
+    $ret->error = TRUE;
+    drupal_set_message(t('There was a problem contacting the Fill PDF service.
+      It may be down, or you may not have internet access. [ERROR @code: @message]',
+      array('@code' => $error->code, '@message' => $error->message)), 'error');
+  }
+  else {
+    $ret->data = $result['data'];
+    $ret->error = FALSE;
+  }
+  return $ret;
+}
+
+/**
+ * Retrieve the PDF's fields.
+ */
+function fillpdf_get_fields($fid) {
+  $result = db_query('SELECT * FROM {fillpdf_fields} WHERE fid = :fid', array(':fid' => $fid));
+  $return = array(
+    'pdf_key' => '',
+    'label' => '',
+    'value' => ''
+  );
+  foreach ($result as $result_array) {
+    $return[$result_array->pdf_key] = array(
+      'label' => $result_array->label,
+      'value' => $result_array->value,
+    );
+  }
+  return $return;
+}
+
+function _fillpdf_process_destination_path($destination_path, $token_objects) {
+  // Two formats of $destination_path are possible:
+  //   1) /absolute/path/to/directory
+  //   2) path/below/files/directory
+  // So, first: Does it begin with a forward slash?
+  $orig_path = $destination_path;
+  $destination_path = trim($orig_path);
+  // Replace any applicable tokens
+  $types = array();
+  if (isset($token_objects['node'])) {
+    $types[] = 'node';
+  }
+  elseif (isset($token_objects['webform'])) {
+    $types[] = 'webform';
+  }
+  foreach ($types as $type) {
+    $destination_path = token_replace($destination_path, array($type => $token_objects[$type]), array('clear' => TRUE));
+  }
+  if (drupal_substr($destination_path, 0, 1) === '/') {
+    // No further modifications needed
+  }
+  else {
+    // Slap on the files directory in front and return it
+    $destination_path = file_build_uri($destination_path);
+  }
+  return $destination_path;
+}
+
+function _fillpdf_replacements_to_array($replacements) {
+  if (empty($replacements) !== TRUE) {
+    $standardized_replacements = str_replace(array("\r\n", "\r"), "\n", $replacements);
+    $lines = explode("\n", $standardized_replacements);
+    $return = array();
+    foreach ($lines as $replacement) {
+      if (!empty($replacement)) {
+        $split = explode('|', $replacement);
+        if (count($split) == 2) { // Sometimes it isn't; don't know why.
+          $return[$split[0]] = preg_replace('|<br />|', '
+', $split[1]);
+        }
+      }
+    }
+    return $return;
+  }
+  else {
+    return array();
+  }
+}
+
+/**
+ * Apply any field value transformations defined via the UI.
+ * Note that the replacement arguments need to already have been run through
+ *   _fillpdf_replacements_to_array().
+ * @see _fillpdf_replacements_to_array()
+ */
+function _fillpdf_transform_field_value($value, $pdf_replacements, $field_replacements) {
+  if (empty($pdf_replacements) && empty($field_replacements)) {
+    return $value;
+  }
+  elseif (!empty($field_replacements) && isset($field_replacements[$value])) {
+    return $field_replacements[$value];
+  }
+  elseif (!empty($pdf_replacements) && isset($pdf_replacements[$value])) {
+    return $pdf_replacements[$value];
+  }
+  else {
+    return $value;
+  }
+}
+
+/**
+ * Whoa, a load function! Fill PDF is growing up!
+ */
+function fillpdf_load($fid, $reset = FALSE) {
+  static $fillpdf = array();
+  if (isset($fillpdf[$fid]) && $reset === FALSE) {
+    // I'm a placeholder if statement!
+  }
+  else {
+    $fillpdf[$fid] = db_query("SELECT * FROM {fillpdf_forms} WHERE fid = :fid", array(':fid' => $fid))->fetch();
+  }
+  if ($fillpdf[$fid]) {
+    // Turn replacements (textarea content) into an array.
+    $fillpdf[$fid]->replacements = _fillpdf_replacements_to_array($fillpdf[$fid]->replacements);
+  }
+  if ($fillpdf[$fid]) {
+    return $fillpdf[$fid];
+  }
+  else {
+    return FALSE;
+  }
+}
+
+function fillpdf_pdftk_check($pdftk_path = 'pdftk') {
+  // An empty value means we should leave it to the PATH.
+  if (empty($pdftk_path)) {
+    $pdftk_path = 'pdftk';
+  }
+  $output = array();
+  $status = NULL;
+  exec($pdftk_path, $output, $status);
+  if (in_array($status, array(126, 127))) {
+    return FALSE;
+  }
+  return TRUE;
+}
+
+// This is a convenience wrapper around variable_get(). It lets us **also**
+// return "pdftk" if the variable is empty, not just unset.
+function fillpdf_pdftk_path() {
+  $path_to_pdftk = variable_get('fillpdf_pdftk_path', 'pdftk');
+  if ($path_to_pdftk) {
+    return $path_to_pdftk;
+  }
+  return 'pdftk';
+}
+
