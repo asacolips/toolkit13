@@ -827,6 +827,29 @@ h1, h2, h3, h4 {
   display: none; 
 }
 
+#back-to-top {
+  display: block;
+  background: fade(black, 10%);
+  color: white;
+  width: 60px;
+  height: 60px;
+  font-size: 10px;
+  text-transform: uppercase;
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  text-align: center;
+  line-height: 1.2;
+  padding: 18px 10px;
+  box-sizing: border-box;
+  z-index: 999;
+  .transition();
+
+  &:hover {
+    background: fade(black, 25%);
+  }
+}
+
 // Powers
 .node-power,
 .node-magic-item {

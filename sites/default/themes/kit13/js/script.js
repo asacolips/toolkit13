@@ -84,6 +84,9 @@ jQuery(document).ready(function($) {
 		});
 	});
 
+	//back to top
+	$('body').append('<a href="#" id="back-to-top">Back to Top</a>');
+
 	//$('.entry-title .toggle').click(function() {
 //	$('article').on('click','.entry-title .toggle', function() {
 //		$(this).parent().parent().parent().toggleClass('hide');
