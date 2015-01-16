@@ -87,6 +87,12 @@ jQuery(document).ready(function($) {
 	//back to top
 	$('body').append('<a href="#" id="back-to-top">Back to Top</a>');
 
+	$('.node-power').each(function() {
+		if ($(this).text().length > 400) {
+			$(this).addClass('lengthy');
+		}
+	});
+
 	//$('.entry-title .toggle').click(function() {
 //	$('article').on('click','.entry-title .toggle', function() {
 //		$(this).parent().parent().parent().toggleClass('hide');
