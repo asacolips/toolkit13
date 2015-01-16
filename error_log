@@ -12,3 +12,34 @@
 [30-Jul-2014 21:23:25 America/Denver] PHP Parse error:  syntax error, unexpected ''sett' (T_ENCAPSED_AND_WHITESPACE), expecting ']' in /home4/mattersm/public_html/kit13/modules/field/modules/text/text.module on line 243
 [30-Jul-2014 21:28:07 America/Denver] PHP Fatal error:  Cannot redeclare kincreasetext_change_text_field_max_length() (previously declared in /home4/mattersm/public_html/kit13/sites/all/modules/kincreasetext/kincreasetext.module:5) in /home4/mattersm/public_html/kit13/sites/all/modules/kincreasetext/kincreasetext.install on line 27
 [30-Jul-2014 21:28:30 America/Denver] PHP Fatal error:  Cannot redeclare kincreasetext_change_text_field_max_length() (previously declared in /home4/mattersm/public_html/kit13/sites/all/modules/kincreasetext/kincreasetext.module:5) in /home4/mattersm/public_html/kit13/sites/all/modules/kincreasetext/kincreasetext.install on line 27
+[06-Oct-2014 10:13:20] PHP Warning:  Unexpected character in input:  '\' (ASCII=92) state=1 in /home4/mattersm/public_html/kit13/sites/all/modules/edit/edit.install on line 121
+[06-Oct-2014 10:13:24] PHP Warning:  Unexpected character in input:  '\' (ASCII=92) state=1 in /home4/mattersm/public_html/kit13/sites/all/modules/edit/edit.install on line 121
+[06-Oct-2014 10:13:27] PHP Warning:  Unexpected character in input:  '\' (ASCII=92) state=1 in /home4/mattersm/public_html/kit13/sites/all/modules/edit/edit.install on line 121
+[26-Nov-2014 14:28:52 America/Denver] PHP Fatal error:  Maximum execution time of 30 seconds exceeded in /home4/mattersm/public_html/kit13/includes/database/database.inc on line 2200
+[26-Nov-2014 14:40:54 America/Denver] PHP Warning:  Unknown: Input variables exceeded 1000. To increase the limit change max_input_vars in php.ini. in Unknown on line 0
+[26-Nov-2014 14:42:20 America/Denver] PHP Warning:  Unknown: Input variables exceeded 1000. To increase the limit change max_input_vars in php.ini. in Unknown on line 0
+[26-Nov-2014 14:44:07 America/Denver] PHP Warning:  Unknown: Input variables exceeded 1000. To increase the limit change max_input_vars in php.ini. in Unknown on line 0
+[26-Nov-2014 14:49:15 America/Denver] PHP Warning:  Unknown: Input variables exceeded 1000. To increase the limit change max_input_vars in php.ini. in Unknown on line 0
+[26-Nov-2014 14:49:16 America/Denver] PHP Warning:  Unknown: Input variables exceeded 1000. To increase the limit change max_input_vars in php.ini. in Unknown on line 0
+[26-Nov-2014 14:50:46 America/Denver] PHP Warning:  Unknown: Input variables exceeded 1000. To increase the limit change max_input_vars in php.ini. in Unknown on line 0
+[26-Nov-2014 14:53:22 America/Denver] PHP Warning:  Unknown: Input variables exceeded 1000. To increase the limit change max_input_vars in php.ini. in Unknown on line 0
+[26-Nov-2014 14:53:30 America/Denver] PHP Warning:  Unknown: Input variables exceeded 1000. To increase the limit change max_input_vars in php.ini. in Unknown on line 0
+[26-Nov-2014 14:53:33 America/Denver] PHP Warning:  Unknown: Input variables exceeded 1000. To increase the limit change max_input_vars in php.ini. in Unknown on line 0
+[26-Nov-2014 14:53:55 America/Denver] PHP Warning:  Unknown: Input variables exceeded 1000. To increase the limit change max_input_vars in php.ini. in Unknown on line 0
+[28-Nov-2014 07:07:30 America/Denver] PHP Warning:  Unknown: Input variables exceeded 1000. To increase the limit change max_input_vars in php.ini. in Unknown on line 0
+[28-Nov-2014 07:07:41 America/Denver] PHP Warning:  Unknown: Input variables exceeded 1000. To increase the limit change max_input_vars in php.ini. in Unknown on line 0
+[28-Nov-2014 07:07:46 America/Denver] PHP Warning:  Unknown: Input variables exceeded 1000. To increase the limit change max_input_vars in php.ini. in Unknown on line 0
+[28-Nov-2014 07:07:48 America/Denver] PHP Warning:  Unknown: Input variables exceeded 1000. To increase the limit change max_input_vars in php.ini. in Unknown on line 0
+[28-Nov-2014 07:07:51 America/Denver] PHP Warning:  Unknown: Input variables exceeded 1000. To increase the limit change max_input_vars in php.ini. in Unknown on line 0
+[28-Nov-2014 07:07:59 America/Denver] PHP Warning:  Unknown: Input variables exceeded 1000. To increase the limit change max_input_vars in php.ini. in Unknown on line 0
+[28-Nov-2014 07:08:08 America/Denver] PHP Warning:  Unknown: Input variables exceeded 1000. To increase the limit change max_input_vars in php.ini. in Unknown on line 0
+[28-Nov-2014 07:08:10 America/Denver] PHP Warning:  Unknown: Input variables exceeded 1000. To increase the limit change max_input_vars in php.ini. in Unknown on line 0
+[28-Nov-2014 07:08:15 America/Denver] PHP Warning:  Unknown: Input variables exceeded 1000. To increase the limit change max_input_vars in php.ini. in Unknown on line 0
+[28-Nov-2014 07:08:21 America/Denver] PHP Warning:  Unknown: Input variables exceeded 1000. To increase the limit change max_input_vars in php.ini. in Unknown on line 0
+[28-Nov-2014 07:08:25 America/Denver] PHP Warning:  Unknown: Input variables exceeded 1000. To increase the limit change max_input_vars in php.ini. in Unknown on line 0
+[28-Nov-2014 07:08:34 America/Denver] PHP Warning:  Unknown: Input variables exceeded 1000. To increase the limit change max_input_vars in php.ini. in Unknown on line 0
+[28-Nov-2014 07:08:36 America/Denver] PHP Warning:  Unknown: Input variables exceeded 1000. To increase the limit change max_input_vars in php.ini. in Unknown on line 0
+[28-Nov-2014 07:08:48 America/Denver] PHP Warning:  Unknown: Input variables exceeded 1000. To increase the limit change max_input_vars in php.ini. in Unknown on line 0
+[28-Nov-2014 07:08:58 America/Denver] PHP Warning:  Unknown: Input variables exceeded 1000. To increase the limit change max_input_vars in php.ini. in Unknown on line 0
+[28-Nov-2014 07:08:59 America/Denver] PHP Warning:  Unknown: Input variables exceeded 1000. To increase the limit change max_input_vars in php.ini. in Unknown on line 0
+[15-Jan-2015 08:31:44 America/Denver] PHP Fatal error:  Call to undefined function _ds_extras_module_implements_alter() in /home4/mattersm/public_html/kit13/sites/all/modules/ds/modules/ds_extras/ds_extras.module on line 140
