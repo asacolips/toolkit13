@@ -43,3 +43,9 @@
 [28-Nov-2014 07:08:58 America/Denver] PHP Warning:  Unknown: Input variables exceeded 1000. To increase the limit change max_input_vars in php.ini. in Unknown on line 0
 [28-Nov-2014 07:08:59 America/Denver] PHP Warning:  Unknown: Input variables exceeded 1000. To increase the limit change max_input_vars in php.ini. in Unknown on line 0
 [15-Jan-2015 08:31:44 America/Denver] PHP Fatal error:  Call to undefined function _ds_extras_module_implements_alter() in /home4/mattersm/public_html/kit13/sites/all/modules/ds/modules/ds_extras/ds_extras.module on line 140
+[17-Feb-2015 09:12:19 America/Denver] PHP Warning:  Unknown: Input variables exceeded 1000. To increase the limit change max_input_vars in php.ini. in Unknown on line 0
+[13-Apr-2015 15:48:23 America/Denver] PHP Fatal error:  Only variables can be passed by reference in /home4/mattersm/public_html/kit13/sites/default/themes/kit13/templates/node--23904.tpl.php on line 38
+[13-Apr-2015 15:48:57 America/Denver] PHP Fatal error:  Only variables can be passed by reference in /home4/mattersm/public_html/kit13/sites/default/themes/kit13/templates/node--23904.tpl.php on line 38
+[13-Apr-2015 15:49:30 America/Denver] PHP Fatal error:  Only variables can be passed by reference in /home4/mattersm/public_html/kit13/sites/default/themes/kit13/templates/node--23904.tpl.php on line 38
+[13-Apr-2015 15:59:58 America/Denver] PHP Fatal error:  Cannot use [] for reading in /home4/mattersm/public_html/kit13/sites/default/themes/kit13/templates/node--23904.tpl.php on line 52
+[13-Apr-2015 16:08:35 America/Denver] PHP Parse error:  syntax error, unexpected '{' in /home4/mattersm/public_html/kit13/sites/default/themes/kit13/templates/node--23904.tpl.php on line 52

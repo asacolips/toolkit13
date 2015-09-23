@@ -66,6 +66,7 @@ jQuery(document).ready(function($) {
 	var $container_node = $('.field-name-field-powers > .field-items');
 	var $container_mitem = $('.field-name-field-character-magic-items > .field-items');
 	var $container_term = $('.view-taxonomy-term');
+	var $container_srd = $('.view-srd-class-powers');
 
 	$(window).load(function() {
 		$container_node.masonry({
@@ -79,6 +80,11 @@ jQuery(document).ready(function($) {
 		});
 
 		$container_term.masonry({
+		  columnWidth: '.node',
+		  itemSelector: '.node'
+		});
+
+		$container_srd.masonry({
 		  columnWidth: '.node',
 		  itemSelector: '.node'
 		});
