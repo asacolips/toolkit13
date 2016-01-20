@@ -49,3 +49,10 @@
 [13-Apr-2015 15:49:30 America/Denver] PHP Fatal error:  Only variables can be passed by reference in /home4/mattersm/public_html/kit13/sites/default/themes/kit13/templates/node--23904.tpl.php on line 38
 [13-Apr-2015 15:59:58 America/Denver] PHP Fatal error:  Cannot use [] for reading in /home4/mattersm/public_html/kit13/sites/default/themes/kit13/templates/node--23904.tpl.php on line 52
 [13-Apr-2015 16:08:35 America/Denver] PHP Parse error:  syntax error, unexpected '{' in /home4/mattersm/public_html/kit13/sites/default/themes/kit13/templates/node--23904.tpl.php on line 52
+[23-Sep-2015 08:46:21 America/Denver] PHP Fatal error:  Maximum execution time of 30 seconds exceeded in /home4/mattersm/public_html/kit13/includes/database/database.inc on line 737
+[23-Sep-2015 08:50:57 America/Denver] PHP Warning:  Unknown: Input variables exceeded 1000. To increase the limit change max_input_vars in php.ini. in Unknown on line 0
+[23-Sep-2015 08:51:04 America/Denver] PHP Warning:  Unknown: Input variables exceeded 1000. To increase the limit change max_input_vars in php.ini. in Unknown on line 0
+[19-Jan-2016 19:35:17] PHP Warning:  Unexpected character in input:  '\' (ASCII=92) state=1 in /home4/mattersm/public_html/kit13/sites/all/modules/recaptcha/recaptcha.module on line 154
+[19-Jan-2016 19:35:17] PHP Parse error:  syntax error, unexpected T_STRING in /home4/mattersm/public_html/kit13/sites/all/modules/recaptcha/recaptcha.module on line 154
+[19-Jan-2016 19:35:32] PHP Warning:  Unexpected character in input:  '\' (ASCII=92) state=1 in /home4/mattersm/public_html/kit13/sites/all/modules/recaptcha/recaptcha.module on line 154
+[19-Jan-2016 19:35:32] PHP Parse error:  syntax error, unexpected T_STRING in /home4/mattersm/public_html/kit13/sites/all/modules/recaptcha/recaptcha.module on line 154

@@ -123,6 +123,13 @@ class editableviews_handler_field_field_edit extends views_handler_field_field {
     // type set for the entity's bundle will be used.
     if (!empty($this->options['widget_type'])) {
       $field_instance['widget']['type'] = $this->options['widget_type'];
+
+      // We also need to set the module for the widget, in case this differs
+      // from the module for the original widget, because this is used to
+      // determine which module's hook_field_widget_form() gets invoked.
+      $widget_info = field_info_widget_types();
+      $widget_info = $widget_info[$this->options['widget_type']];
+      $field_instance['widget']['module'] = $widget_info['module'];
     }
 
     // On new entities, force this to not be required, to allow the user to not
