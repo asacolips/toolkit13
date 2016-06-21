@@ -125,8 +125,10 @@ function imagecache_token_tokens($type, $tokens, array $data = array(), array $o
           foreach ($field['bundles'] as $entity_type => $bundles) {
             foreach ($bundles as $bundle) {
               $key = $field['type'] . ':' . $field['field_name'] . ':' . $entity_type . ':' . $bundle;
-              if (empty($supported[$key])) {
+              if (!empty($supported[$key])) {
                 $is_supported = TRUE;
+                // Exit both foreach() loops.
+                break 2;
               }
             }
           }
@@ -147,65 +149,92 @@ function imagecache_token_tokens($type, $tokens, array $data = array(), array $o
   if ($type == 'image-field' && !empty($data['image-field'])) {
     foreach ($tokens as $token => $original) {
       $output = array();
-      foreach ($data['image-field'] as $field) {
-        $explode = explode(':', $token);
-        
-        $type = isset($explode[0]) ? $explode[0] : FALSE;
-        $attribute = isset($explode[1]) ? $explode[1] : FALSE;
 
-        if ($attribute == 'render') {
-          $output[] = theme('image_formatter', array('item' => $field, 'image_style' => $type));
+      // The token will be in the format "[imagestyle]:[attribute]" so split
+      // into the individual pieces.
+      $explode = explode(':', $token);
+      $type = isset($explode[0]) ? $explode[0] : FALSE;
+      $attribute = isset($explode[1]) ? $explode[1] : FALSE;
+
+      // Special handling for the 'first', 'second' and 'third' tokens.
+      if (in_array($attribute, array('first', 'second', 'third'))) {
+        if ($attribute == 'first') {
+          if (!empty($data['image-field'][0]['uri'])) {
+            $output[] = image_style_url($type, $data['image-field'][0]['uri']);
+          }
         }
-        elseif (isset($attribute) && !empty($attribute) && isset($field[$attribute])) {
-          if (in_array($attribute, array('width', 'height', 'mimetype'))) {
+        elseif ($attribute == 'second') {
+          if (!empty($data['image-field'][1]['uri'])) {
+            $output[] = image_style_url($type, $data['image-field'][1]['uri']);
+          }
+        }
+        elseif ($attribute == 'third') {
+          if (!empty($data['image-field'][2]['uri'])) {
+            $output[] = image_style_url($type, $data['image-field'][2]['uri']);
+          }
+        }
 
-            $styled_uri = image_style_path($type, $field['uri']);
-            $style      = image_style_load($type);
+        $replacements[$original] = implode('', $output);
+      }
 
-            // Imagecrop module support.
-            global $imagecrop_style;
-            $imagecrop_style = $type;
+      // Other tokens.
+      else {
+        foreach ($data['image-field'] as $field) {
+          if ($attribute == 'render') {
+            $output[] = theme('image_formatter', array('item' => $field, 'image_style' => $type));
+          }
+          elseif (isset($attribute) && !empty($attribute) && isset($field[$attribute])) {
+            // These attributes are for the resized image, rather than the
+            // original, so load the resized image and obtain its meta data.
+            if (in_array($attribute, array('width', 'height', 'mimetype', 'extension', 'filesize'))) {
+              $styled_uri = image_style_path($type, $field['uri']);
+              $style = image_style_load($type);
 
-            // Create a derivative of the image for this style.
-            image_style_create_derivative($style, $field['uri'], $styled_uri);
+              // Imagecrop module support.
+              global $imagecrop_style;
+              $imagecrop_style = $type;
 
-            // If the styled image's information wasn't loaded before then load
-            // it now; as this process is a little heavy, the information will
-            // be statically cached to avoid needing to reload the details for
-            // for another token.
-            if (empty($images_style_data[$styled_uri])) {
-              $images_style_data[$styled_uri] = image_get_info($styled_uri);
-            }
+              // Create a derivative of the image for this style.
+              image_style_create_derivative($style, $field['uri'], $styled_uri);
 
-            // Check for each supported attribute.
-            if ($attribute == 'width') {
-              $output[] = $images_style_data[$styled_uri]['width'];
+              // If the styled image's information wasn't loaded before then
+              // load it now; as this process is a little heavy, the
+              // information will be statically cached to avoid needing to
+              // reload the details for another token.
+              if (empty($images_style_data[$styled_uri])) {
+                $images_style_data[$styled_uri] = image_get_info($styled_uri);
+              }
+
+              // Check for each supported attribute.
+              if ($attribute == 'width') {
+                $output[] = $images_style_data[$styled_uri]['width'];
+              }
+              if ($attribute == 'height') {
+                $output[] = $images_style_data[$styled_uri]['height'];
+              }
+              if ($attribute == 'mimetype') {
+                $output[] = $images_style_data[$styled_uri]['mime_type'];
+              }
+              if ($attribute == 'extension') {
+                $output[] = $images_style_data[$styled_uri]['extension'];
+              }
+              if ($attribute == 'filesize') {
+                $output[] = $images_style_data[$styled_uri]['file_size'];
+              }
             }
-            if ($attribute == 'height') {
-              $output[] = $images_style_data[$styled_uri]['height'];
-            }
-            if ($attribute == 'mimetype') {
-              $output[] = $images_style_data[$styled_uri]['mime_type'];
-            }
-            if ($attribute == 'extension') {
-              $output[] = $images_style_data[$styled_uri]['extension'];
-            }
-            if ($attribute == 'filesize') {
-              $output[] = $images_style_data[$styled_uri]['file_size'];
+            else {
+              $output[] = $field[$attribute];
             }
           }
           else {
-            $output[] = $field[$attribute];
+            $output[] = image_style_url($token, $field['uri']);
           }
         }
-        else {
-          $output[] = image_style_url($token, $field['uri']);
-        }
-      }
 
-      // Compile each of the elements into a comma separated list, per standard
-      // Token practice.
-      $replacements[$original] = implode(', ', $output);
+        // Compile each of the elements into a comma separated list, per
+        // standard Token practice.
+        $replacements[$original] = implode(', ', $output);
+      }
     }
   }
 
@@ -215,7 +244,7 @@ function imagecache_token_tokens($type, $tokens, array $data = array(), array $o
 /**
  * Implements _imagegecache_token_image_attributes().
  *
- * Helperfunction for getting all available image attributes.
+ * Helper function for getting all available image attributes.
  */
 function _imagegecache_token_image_attributes() {
   return array(
@@ -228,8 +257,10 @@ function _imagegecache_token_image_attributes() {
     'alt' => '',
     'title' => NULL,
     'mimetype' => NULL,
-    'attributes' => array(),
     'render' => '',
+    'first' => '',
+    'second' => '',
+    'third' => '',
     'uri' => '',
   );
 }

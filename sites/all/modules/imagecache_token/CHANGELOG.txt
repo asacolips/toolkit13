@@ -1,3 +1,17 @@
+Imagecache_Token 7.x-1.0-rc2, 2016-03-06
+----------------------------------------
+#2578455 by garphy: File and media fields weren't working.
+#2562677 by DamienMcKenna: Indicate on the settings page that image fields are
+  automatically supported.
+#2124637 by designerbrent, achton, DamienMcKenna, garphy: Add new tokens to
+  output the URLs of the first, second and third items in a multi-item field.
+#2578975 by DamienMcKenna: Removed the 'attributes' token.
+#2124637 by DamienMcKenna: Didn't properly handle 'extension' or 'filesize' for
+  resized images.
+#2682049 by DamienMcKenna: Added tests to confirm the tokens that are present
+  for image fields.
+
+
 Imagecache_Token 7.x-1.0-rc1, 2015-08-01
 ----------------------------------------
 Initial commit.

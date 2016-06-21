@@ -13,11 +13,13 @@ admin panel.
 
 Configuration
 ------------------------------------------------------------------------------
-Because "file" and "media" file types may contain images and other types of
-files, it is necessary to indicate which fields hold images. Field selection is
+Because "file" and "media" file types may contain other types of files, not just
+images, it is necessary to indicate which fields hold images. Field selection is
 controlled via the settings page:
 
     admin/config/media/imagecache-token
+
+All image fields are automatically supported.
 
 
 Gotchas
