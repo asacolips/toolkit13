@@ -108,7 +108,7 @@ jQuery(document).ready(function($) {
 		if (isNaN(score) == false) {
 			var mod = Math.floor((score - 10) / 2);
 			var operator = (mod > 0) ? '+' : '';
-			$self.text($score + ' (' + operator + mod + ')');
+			$self.text(score + ' (' + operator + mod + ')');
 		}
 	});
 
