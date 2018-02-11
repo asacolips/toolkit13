@@ -99,6 +99,19 @@ jQuery(document).ready(function($) {
 		}
 	});
 
+	// Ability scores.
+	var $abilityScores = $('.node-character .group-middle .field-item');
+
+	$abilityScores.each(function(index, element) {
+		var $self = $(this);
+		var score = $self.text();
+		if (isNaN(score) == false) {
+			var mod = Math.floor((score - 10) / 2);
+			var operator = (mod > 0) ? '+' : '';
+			$self.text($score + ' (' + operator + mod + ')');
+		}
+	});
+
 	//$('.entry-title .toggle').click(function() {
 //	$('article').on('click','.entry-title .toggle', function() {
 //		$(this).parent().parent().parent().toggleClass('hide');
