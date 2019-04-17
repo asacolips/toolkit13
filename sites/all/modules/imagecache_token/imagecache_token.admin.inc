@@ -1,4 +1,5 @@
 <?php
+
 /**
  * @file
  * Settings form for the Imagecache Token module.

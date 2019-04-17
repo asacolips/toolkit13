@@ -1,22 +1,26 @@
 <?php
+
 /**
  * @file
- * Various tests for the Imagecache Token module
+ * Various tests for the Imagecache Token module.
  */
 
 /**
- * The "standard" installation profile generates an "image" field, which will
- * be used in these tests.
+ * Test the Imagecache Token module.
  */
-
 class ImagecacheTokenTests extends DrupalWebTestCase {
 
   /**
-   * Admin user.
-   *
-   * @var \StdClass
+   * {@inheritdoc}
    */
-  protected $adminUser;
+  public static function getInfo() {
+    return array(
+      'name' => 'Imagecache Token tests',
+      'description' => 'Test stuff.',
+      'group' => 'Imagecache Token',
+      'dependencies' => array('token'),
+    );
+  }
 
   /**
    * {@inheritdoc}
@@ -28,26 +32,15 @@ class ImagecacheTokenTests extends DrupalWebTestCase {
     parent::setUp($modules);
 
     // Create an admin user and log them in.
-    $this->adminUser = $this->drupalCreateUser(array(
+    $admin_user = $this->drupalCreateUser(array(
       'bypass node access',
       'access content overview',
       'administer nodes',
     ));
-    $this->drupalLogin($this->adminUser);
+    $this->drupalLogin($admin_user);
 
     // Clear all of the token caches.
     token_clear_cache();
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public static function getInfo() {
-    return array(
-      'name' => 'Imagecache Token tests',
-      'description' => 'Test stuff.',
-      'group' => 'Imagecache Token',
-    );
   }
 
   /**

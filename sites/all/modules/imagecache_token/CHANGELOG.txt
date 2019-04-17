@@ -1,3 +1,20 @@
+Imagecache_Token 7.x-1.0, 2019-04-11
+------------------------------------
+#2544084 by Chris Matthews, DamienMcKenna: Update documentation.
+
+
+Imagecache_Token 7.x-1.0-rc3, 2019-02-16
+----------------------------------------
+#2853037 by monstrfolk, DamienMcKenna: Rewrite logic of tokens to improve
+  speed, add functionality, and fix bugs.
+#2277125 by DamienMcKenna: Attributes/styles with high depth levels will not
+  show in most default token trees.
+#2995172 by bdragon, FabianX: Use field_info_field_map() instead of
+  field_info_fields().
+#3007358 by fengtan, DamienMcKenna: Coding standards.
+#3033559 by DamienMcKenna: Move token hook implementations to a tokens.inc file.
+
+
 Imagecache_Token 7.x-1.0-rc2, 2016-03-06
 ----------------------------------------
 #2578455 by garphy: File and media fields weren't working.
